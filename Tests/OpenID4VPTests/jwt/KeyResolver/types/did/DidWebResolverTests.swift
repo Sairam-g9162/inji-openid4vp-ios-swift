@@ -124,7 +124,25 @@ final class DidWebResolverTests: XCTestCase {
         } catch {
             XCTAssertEqual(error as? DidResolverExceptions , DidResolverExceptions.didResolutionFailed(message: "Network request failed with error response - Network Request failed with error response: response"))
         }
+    }
+    
+ 
+    func testConstructUrl() throws {
+        let testCases: [(input: String, expectedUrl: String)] = [
+            ("did:web:example.com", "https://example.com/.well-known/did.json"),
+            ("did:web:example.com:user:profile", "https://example.com/user/profile/did.json"),
+            ("did:web:sub.example.com", "https://sub.example.com/.well-known/did.json"),
+            ("did:web:example.com:services:auth", "https://example.com/services/auth/did.json"),
+            ("did:web:example.com:folder:anotherFolder", "https://example.com/folder/anotherFolder/did.json")
+        ]
         
+        for testCase in testCases {
+            let didWebResolver = DidWebResolver(didUrl: testCase.input, networkManager: mockNetworkManager)
+            let parsedDID = try didWebResolver.parse()
+            let urlString = try didWebResolver.constructUrl(from: parsedDID)
+            
+            XCTAssertEqual(urlString, testCase.expectedUrl, "Constructed URL does not match expected URL for DID: \(testCase.input)")
+        }
     }
     
     struct TestCase {

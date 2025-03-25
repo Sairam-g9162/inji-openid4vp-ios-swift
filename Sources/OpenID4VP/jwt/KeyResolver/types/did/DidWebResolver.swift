@@ -72,9 +72,7 @@ class DidWebResolver {
     
     private func resolve(parsedDID: ParsedDID) async throws -> [String: Any] {
         do {
-            let path = parsedDID.id.split(separator: ":").map { String($0) }.map { $0.removingPercentEncoding ?? $0 }.joined(separator: "/")
-            
-            let urlString = "https://\(path)\(DOC_PATH)"
+            let urlString = try constructUrl(parsedDID: ParsedDID)
             
             let response = try await networkManager.sendHTTPRequest(url: urlString, method: .GET, bodyParams: nil, headers: nil)
             guard let responseBody = response.responseBody.data(using: .utf8) else {
@@ -96,6 +94,21 @@ class DidWebResolver {
         } catch {
             throw Logger.handleException(exceptionType: "DidResultionFailed", message: error.localizedDescription, className: DidWebResolver.className)
         }
+    }
+    private func constructUrl(from parsedDID: ParsedDID) throws -> String {
+        let idComponents = parsedDID.id.split(separator: ":").map { String($0) }
+        let baseDomain = idComponents[0] // This should be the domain (e.g., example.com)
+        
+        let hasPathComponents = idComponents.count > 1
+        let urlString: String
+        if hasPathComponents {
+            let path = idComponents.dropFirst().joined(separator: "/")
+            urlString = "https://\(baseDomain)/\(path)/did.json"
+        } else {
+            urlString = "https://\(baseDomain)/.well-known/did.json"
+        }
+        
+        return urlString
     }
 }
 
